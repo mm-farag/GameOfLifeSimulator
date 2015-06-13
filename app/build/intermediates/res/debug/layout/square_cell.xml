@@ -1,0 +1,7 @@
+<ImageView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="30dp"
+    android:layout_height="30dp"
+    android:background="@android:color/white"
+    android:padding="2dp">
+</ImageView>
+<!-- From: file:/C:/Users/IBM_ADMIN/AndroidStudioProjects/GameOfLifeSimulator/app/src/main/res/layout/square_cell.xml -->
