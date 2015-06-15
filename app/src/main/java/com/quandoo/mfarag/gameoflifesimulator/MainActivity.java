@@ -5,12 +5,11 @@ import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
 import android.os.Bundle;
 import android.view.View;
-import android.widget.AdapterView;
 import android.widget.Button;
-import android.widget.GridView;
 import android.widget.ImageView;
+import android.widget.TableLayout;
+import android.widget.TableRow;
 
-import com.quandoo.mfarag.gameoflifesimulator.adapters.ImageAdapter;
 import com.quandoo.mfarag.gameoflifesimulator.util.LogUtil;
 
 import java.util.ArrayList;
@@ -24,15 +23,17 @@ public class MainActivity extends Activity implements View.OnClickListener {
     private final int numberOfRows = 20;
     private final int numberOfColumns = 20;
     private final int ITERATION_TIME = 1000;
-    private int numberOfItems;
+    //private int numberOfItems;
 
     // Objects
     private Timer incrementTimer;
     private ArrayList<Integer> livingList;
     private ArrayList<Integer> dyingList;
+    private long iterationTimeSum ;
+    private int iterationNumber ;
 
     // Views
-    private GridView gridView;
+    private TableLayout tableLayout;
     private Button startButton;
     private Button clearButton;
     private Button performStepButton;
@@ -47,13 +48,17 @@ public class MainActivity extends Activity implements View.OnClickListener {
         this.initializeScreenViews();
     }
 
-
     /**
      * initializeObjects method initializes the screen different objects.
      */
     private void initializeObjects() {
 
-        numberOfItems = numberOfColumns * numberOfRows;
+        //numberOfItems = numberOfColumns * numberOfRows;
+
+        LogUtil.debug("init");
+
+        iterationTimeSum = 0 ;
+        iterationNumber = 1 ;
 
         livingList = new ArrayList();
         dyingList = new ArrayList();
@@ -67,12 +72,41 @@ public class MainActivity extends Activity implements View.OnClickListener {
     private void initializeScreenViews() {
 
 
-        gridView = (GridView) findViewById(R.id.gridView);
-        gridView.setNumColumns(numberOfColumns);
+        tableLayout = (TableLayout) findViewById(R.id.tableLayout);
 
-        gridView.setAdapter(new ImageAdapter(this, numberOfItems));
+        for (int row = 0; row < numberOfRows; row++) {
+            TableRow tableRow = new TableRow(this);
+            TableRow.LayoutParams params = new TableRow.LayoutParams(TableRow.LayoutParams.MATCH_PARENT);
+            tableRow.setLayoutParams(params);
 
-        gridView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            for (int col = 0; col < numberOfColumns; col++) {
+
+                final View squareCell = getLayoutInflater().inflate(R.layout.square_cell, null);
+                TableRow.LayoutParams layoutParams = new TableRow.LayoutParams(30, 30);
+                layoutParams.setMargins(2, 2, 2, 2);
+                squareCell.setLayoutParams(layoutParams);
+
+                squareCell.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+
+                        ColorDrawable drawable = (ColorDrawable) squareCell.getBackground();
+                        if (drawable.getColor() == Color.BLACK) {
+                            squareCell.setBackgroundColor(Color.WHITE);
+                        } else {
+                            squareCell.setBackgroundColor(Color.BLACK);
+                        }
+                    }
+                });
+
+                tableRow.addView(squareCell);
+            }
+            tableLayout.addView(tableRow);
+        }
+
+        /*
+        tableLayout.setAdapter(new ImageAdapter(this, numberOfItems));
+        tableLayout.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             public void onItemClick(AdapterView<?> parent, View view,
                                     int position, long id) {
                 ColorDrawable drawable = (ColorDrawable) view.getBackground();
@@ -83,6 +117,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
                 }
             }
         });
+        */
 
         performStepButton = (Button) findViewById(R.id.performStepButton);
         performStepButton.setOnClickListener(this);
@@ -104,9 +139,11 @@ public class MainActivity extends Activity implements View.OnClickListener {
 
             clearTheGrid();
 
-            int startIndex = 185;
+            int startIndex = 4;
+            TableRow row = (TableRow) tableLayout.getChildAt(9);
+
             for (int i = startIndex; i < 10 + startIndex; i++) {
-                ImageView imageView = (ImageView) gridView.getChildAt(i);
+                ImageView imageView = (ImageView) row.getChildAt(i);
                 imageView.setBackgroundColor(Color.BLACK);
             }
 
@@ -129,13 +166,28 @@ public class MainActivity extends Activity implements View.OnClickListener {
 
                 incrementTimer = new Timer();
 
+                iterationTimeSum = 0 ;
+                iterationNumber = 1 ;
+
                 TimerTask incrementTask = new TimerTask() {
                     @Override
                     public void run() {
 
-                        LogUtil.debug("Running Iteration...");
+                        LogUtil.debug("Running Iteration : " + iterationNumber );
+                        long startTime = System.nanoTime();
+
+                        // run/call the method
                         performStep();
                         updateTheGrid();
+
+                        long endTime = System.nanoTime();
+                        long diff = endTime - startTime;
+                        LogUtil.debug("Elapsed milliseconds: " + diff / 1000000);
+
+                        iterationTimeSum += diff / 1000000 ;
+
+                        long avg = iterationTimeSum / iterationNumber++;
+                        LogUtil.debug("Avg elapsed milliseconds: " + avg );
 
                     }
                 };
@@ -159,24 +211,23 @@ public class MainActivity extends Activity implements View.OnClickListener {
 
         for (int i = 0; i < numberOfRows; i++) {
 
+            TableRow row = (TableRow) tableLayout.getChildAt(i);
+
             for (int j = 0; j < numberOfColumns; j++) {
 
-                clearCell(i * numberOfColumns + j);
+                ImageView imageView = (ImageView) row.getChildAt(j);
+                imageView.setBackgroundColor(Color.WHITE);
             }
         }
     }
 
-    private void clearCell(int index) {
 
-        ImageView imageView = (ImageView) gridView.getChildAt(index);
-        imageView.setBackgroundColor(Color.WHITE);
-    }
-
-    private boolean isLiveCell(int index) {
+    private boolean isLiveCell(TableRow row, int index) {
 
         boolean liveCell = false;
 
-        ImageView imageView = (ImageView) gridView.getChildAt(index);
+        ImageView imageView = (ImageView) row.getChildAt(index);
+
         ColorDrawable drawable = (ColorDrawable) imageView.getBackground();
         if (drawable.getColor() == Color.BLACK) {
             liveCell = true;
@@ -185,47 +236,55 @@ public class MainActivity extends Activity implements View.OnClickListener {
         return liveCell;
     }
 
+    private void checkCell(boolean liveCell, int i, int j) {
+
+        // search for live neighbours
+        int liveNeighbours = 0;
+
+        for (int k = i - 1; k < i + 2 && k >= 0 && k < numberOfRows; k++) {
+
+            TableRow row = (TableRow) tableLayout.getChildAt(k);
+
+            for (int m = j - 1; m < j + 2 && m >= 0 && m < numberOfColumns ; m++) {
+
+                if ( k == i && m == j ) {
+                    continue;
+                } else {
+
+                    if (isLiveCell(row, m)) {
+                        liveNeighbours++;
+                    }
+                }
+            }
+        }
+
+        //LogUtil.debug("item index : " + (i * numberOfColumns + j));
+        //LogUtil.debug("liveCell : " + liveCell);
+        //LogUtil.debug("liveNeighbours : " + liveNeighbours);
+
+        if (liveCell) {
+            if (liveNeighbours < 2 || liveNeighbours > 3) {
+                dyingList.add(i * numberOfColumns + j);
+                //LogUtil.debug("added to dyingList");
+            }
+        } else {
+            if (liveNeighbours == 3) {
+                livingList.add(i * numberOfColumns + j);
+                //LogUtil.debug("added to livingList");
+            }
+        }
+    }
 
     private void performStep() {
 
         for (int i = 0; i < numberOfRows; i++) {
 
+            TableRow row = (TableRow) tableLayout.getChildAt(i);
+
             for (int j = 0; j < numberOfColumns; j++) {
 
-                boolean liveCell = isLiveCell(i * numberOfColumns + j);
-
-                // search for live neighbours
-                int liveNeighbours = 0;
-
-                for (int k = i - 1; k < i + 2; k++) {
-                    for (int m = j - 1; m < j + 2; m++) {
-
-                        if (k < 0 || m < 0 || k >= numberOfRows || m >= numberOfColumns || (k == i && m == j)) {
-                            continue;
-                        } else {
-
-                            if (isLiveCell(k * numberOfColumns + m)) {
-                                liveNeighbours++;
-                            }
-                        }
-                    }
-                }
-
-                //LogUtil.debug("item index : " + (i * numberOfColumns + j));
-                //LogUtil.debug("liveCell : " + liveCell);
-                //LogUtil.debug("liveNeighbours : " + liveNeighbours);
-
-                if (liveCell) {
-                    if (liveNeighbours < 2 || liveNeighbours > 3) {
-                        dyingList.add(i * numberOfColumns + j);
-                        //LogUtil.debug("added to dyingList");
-                    }
-                } else {
-                    if (liveNeighbours == 3) {
-                        livingList.add(i * numberOfColumns + j);
-                        //LogUtil.debug("added to livingList");
-                    }
-                }
+                boolean liveCell = isLiveCell(row, j);
+                checkCell(liveCell, i, j);
             }
         }
     }
@@ -235,16 +294,27 @@ public class MainActivity extends Activity implements View.OnClickListener {
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                for (int i : dyingList) {
+                for (int index : dyingList) {
 
-                    ImageView imageView = (ImageView) gridView.getChildAt(i);
+                    int rowIndex = index / numberOfColumns;
+                    int columnIndex = index % numberOfColumns;
+
+                    TableRow row = (TableRow) tableLayout.getChildAt(rowIndex);
+                    ImageView imageView = (ImageView) row.getChildAt(columnIndex);
+
                     imageView.setBackgroundColor(Color.WHITE);
                 }
 
 
-                for (int i : livingList) {
+                for (int index : livingList) {
 
-                    ImageView imageView = (ImageView) gridView.getChildAt(i);
+                    int rowIndex = index / numberOfColumns;
+                    int columnIndex = index % numberOfColumns;
+
+                    TableRow row = (TableRow) tableLayout.getChildAt(rowIndex);
+                    ImageView imageView = (ImageView) row.getChildAt(columnIndex);
+
+
                     imageView.setBackgroundColor(Color.BLACK);
                 }
 
@@ -254,6 +324,6 @@ public class MainActivity extends Activity implements View.OnClickListener {
         });
 
 
-        //gridView.invalidate();
+        //tableLayout.invalidate();
     }
 }

@@ -4,39 +4,32 @@
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:paddingBottom="5dp"
-    android:paddingTop="5dp"
     android:paddingLeft="5dp"
     android:paddingRight="5dp"
+    android:paddingTop="5dp"
     tools:context="com.quandoo.mfarag.gameoflifesimulation.MainActivity">
 
     <TextView
-        android:visibility="gone"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Game of Life Simulation" />
+        android:text="Game of Life Simulation"
+        android:visibility="gone" />
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="horizontal">
 
-        <GridView
-            android:id="@+id/gridView"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="4"
-            android:columnWidth="5dp"
-            android:gravity="center"
-            android:horizontalSpacing="1dp"
-            android:numColumns="20"
-            android:rowCount="20"
-            android:stretchMode="spacingWidthUniform"
-            android:verticalSpacing="1dp" />
+        <TableLayout
+            android:id="@+id/tableLayout"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            ></TableLayout>
 
         <LinearLayout
-            android:layout_width="0dp"
+            android:layout_width="wrap_content"
             android:layout_height="match_parent"
-            android:layout_weight="1"
+            android:layout_margin="20dp"
             android:orientation="vertical">
 
             <Button

@@ -10,7 +10,7 @@ import android.widget.Toast;
  */
 public class LogUtil {
 
-	private static final String TAG = "gameoflifesimulation";
+	private static final String TAG = "gameoflifesimulator";
 
 	public static boolean enableDebug = true;
 	public static boolean showToast = true;

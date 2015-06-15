@@ -1543,7 +1543,6 @@ containing a value of this type.
         public static final int end=0x7f090014;
         public static final int expand_activities_button=0x7f090027;
         public static final int expanded_menu=0x7f090037;
-        public static final int gridView=0x7f09004f;
         public static final int home=0x7f090004;
         public static final int homeAsUp=0x7f09000d;
         public static final int icon=0x7f09002b;
@@ -1585,6 +1584,7 @@ containing a value of this type.
         public static final int startButton=0x7f090051;
         public static final int submit_area=0x7f09004b;
         public static final int tabMode=0x7f09000b;
+        public static final int tableLayout=0x7f09004f;
         public static final int tenCellPatternButton=0x7f090053;
         public static final int textSpacerNoButtons=0x7f090033;
         public static final int title=0x7f09002c;
