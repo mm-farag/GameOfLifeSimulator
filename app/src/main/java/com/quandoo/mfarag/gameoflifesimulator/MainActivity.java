@@ -27,10 +27,12 @@ public class MainActivity extends Activity implements View.OnClickListener {
 
     // Objects
     private Timer incrementTimer;
-    private ArrayList<Integer> livingList;
-    private ArrayList<Integer> dyingList;
-    private long iterationTimeSum ;
-    private int iterationNumber ;
+    private ArrayList<Integer> checkedDiedCells;
+    private ArrayList<Integer> livingCellsList;
+    private ArrayList<Integer> toLiveCellsList;
+    private ArrayList<Integer> toDieCellsList;
+    private long iterationTimeSum;
+    private int iterationNumber;
 
     // Views
     private TableLayout tableLayout;
@@ -57,11 +59,13 @@ public class MainActivity extends Activity implements View.OnClickListener {
 
         LogUtil.debug("init");
 
-        iterationTimeSum = 0 ;
-        iterationNumber = 1 ;
+        iterationTimeSum = 0;
+        iterationNumber = 1;
 
-        livingList = new ArrayList();
-        dyingList = new ArrayList();
+        checkedDiedCells = new ArrayList();
+        livingCellsList = new ArrayList();
+        toLiveCellsList = new ArrayList();
+        toDieCellsList = new ArrayList();
 
     }
 
@@ -86,6 +90,8 @@ public class MainActivity extends Activity implements View.OnClickListener {
                 layoutParams.setMargins(2, 2, 2, 2);
                 squareCell.setLayoutParams(layoutParams);
 
+                final int cellIndex = row * numberOfColumns + col;
+
                 squareCell.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
@@ -93,8 +99,10 @@ public class MainActivity extends Activity implements View.OnClickListener {
                         ColorDrawable drawable = (ColorDrawable) squareCell.getBackground();
                         if (drawable.getColor() == Color.BLACK) {
                             squareCell.setBackgroundColor(Color.WHITE);
+                            livingCellsList.remove(new Integer(cellIndex));
                         } else {
                             squareCell.setBackgroundColor(Color.BLACK);
+                            livingCellsList.add(cellIndex);
                         }
                     }
                 });
@@ -139,12 +147,14 @@ public class MainActivity extends Activity implements View.OnClickListener {
 
             clearTheGrid();
 
-            int startIndex = 4;
+            int startIndex = 5;
             TableRow row = (TableRow) tableLayout.getChildAt(9);
 
-            for (int i = startIndex; i < 10 + startIndex; i++) {
-                ImageView imageView = (ImageView) row.getChildAt(i);
+            for (int j = startIndex; j < 10 + startIndex; j++) {
+                ImageView imageView = (ImageView) row.getChildAt(j);
                 imageView.setBackgroundColor(Color.BLACK);
+
+                livingCellsList.add(9 * numberOfColumns + j);
             }
 
         } else if (view == clearButton) {
@@ -166,59 +176,77 @@ public class MainActivity extends Activity implements View.OnClickListener {
 
                 incrementTimer = new Timer();
 
-                iterationTimeSum = 0 ;
-                iterationNumber = 1 ;
+                iterationTimeSum = 0;
+                iterationNumber = 1;
 
                 TimerTask incrementTask = new TimerTask() {
                     @Override
                     public void run() {
 
-                        LogUtil.debug("Running Iteration : " + iterationNumber );
+                        LogUtil.debug("Running Iteration : " + iterationNumber);
                         long startTime = System.nanoTime();
 
-                        // run/call the method
-                        performStep();
-                        updateTheGrid();
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+
+                                if (livingCellsList.size() == 0) {
+
+                                    stopTheSimulation();
+
+                                } else {
+
+                                    // run/call the method
+                                    performStep();
+                                    updateTheGrid();
+                                }
+                            }
+                        });
 
                         long endTime = System.nanoTime();
                         long diff = endTime - startTime;
                         LogUtil.debug("Elapsed milliseconds: " + diff / 1000000);
 
-                        iterationTimeSum += diff / 1000000 ;
+                        iterationTimeSum += diff / 1000000;
 
                         long avg = iterationTimeSum / iterationNumber++;
-                        LogUtil.debug("Avg elapsed milliseconds: " + avg );
+                        LogUtil.debug("Avg elapsed milliseconds: " + avg);
 
                     }
                 };
 
                 incrementTimer.schedule(incrementTask, 0, ITERATION_TIME);
 
-
             } else {
-                startButton.setText("Start");
-                performStepButton.setEnabled(true);
-                clearButton.setEnabled(true);
-                tenCellPatternButton.setEnabled(true);
-
-                incrementTimer.cancel();
+                stopTheSimulation();
             }
         }
     }
 
+    private void stopTheSimulation() {
+
+        startButton.setText("Start");
+        performStepButton.setEnabled(true);
+        clearButton.setEnabled(true);
+        tenCellPatternButton.setEnabled(true);
+
+        incrementTimer.cancel();
+    }
 
     private void clearTheGrid() {
 
-        for (int i = 0; i < numberOfRows; i++) {
+        for (int index : livingCellsList) {
 
-            TableRow row = (TableRow) tableLayout.getChildAt(i);
+            int rowIndex = index / numberOfColumns;
+            int columnIndex = index % numberOfColumns;
 
-            for (int j = 0; j < numberOfColumns; j++) {
+            TableRow row = (TableRow) tableLayout.getChildAt(rowIndex);
+            ImageView imageView = (ImageView) row.getChildAt(columnIndex);
 
-                ImageView imageView = (ImageView) row.getChildAt(j);
-                imageView.setBackgroundColor(Color.WHITE);
-            }
+            imageView.setBackgroundColor(Color.WHITE);
         }
+
+        livingCellsList.clear();
     }
 
 
@@ -236,18 +264,21 @@ public class MainActivity extends Activity implements View.OnClickListener {
         return liveCell;
     }
 
-    private void checkCell(boolean liveCell, int i, int j) {
+    private void checkCell(boolean liveCell, int index) {
+
+        int rowIndex = index / numberOfColumns;
+        int columnIndex = index % numberOfColumns;
 
         // search for live neighbours
         int liveNeighbours = 0;
 
-        for (int k = i - 1; k < i + 2 && k >= 0 && k < numberOfRows; k++) {
+        for (int k = rowIndex - 1; k < rowIndex + 2 && k >= 0 && k < numberOfRows; k++) {
 
             TableRow row = (TableRow) tableLayout.getChildAt(k);
 
-            for (int m = j - 1; m < j + 2 && m >= 0 && m < numberOfColumns ; m++) {
+            for (int m = columnIndex - 1; m < columnIndex + 2 && m >= 0 && m < numberOfColumns; m++) {
 
-                if ( k == i && m == j ) {
+                if (k == rowIndex && m == columnIndex) {
                     continue;
                 } else {
 
@@ -264,65 +295,83 @@ public class MainActivity extends Activity implements View.OnClickListener {
 
         if (liveCell) {
             if (liveNeighbours < 2 || liveNeighbours > 3) {
-                dyingList.add(i * numberOfColumns + j);
-                //LogUtil.debug("added to dyingList");
+                toDieCellsList.add(rowIndex * numberOfColumns + columnIndex);
+                //LogUtil.debug("added to toDieCellsList");
             }
         } else {
             if (liveNeighbours == 3) {
-                livingList.add(i * numberOfColumns + j);
-                //LogUtil.debug("added to livingList");
+                toLiveCellsList.add(rowIndex * numberOfColumns + columnIndex);
+                //LogUtil.debug("added to toLiveCellsList");
             }
         }
     }
 
     private void performStep() {
 
-        for (int i = 0; i < numberOfRows; i++) {
+        for (int index : livingCellsList) {
+            // check living cells
+            checkCell(true, index);
 
-            TableRow row = (TableRow) tableLayout.getChildAt(i);
+            // check died cells around living cells and mark them as checked.
 
-            for (int j = 0; j < numberOfColumns; j++) {
+            int rowIndex = index / numberOfColumns;
+            int columnIndex = index % numberOfColumns;
 
-                boolean liveCell = isLiveCell(row, j);
-                checkCell(liveCell, i, j);
+            for (int k = rowIndex - 1; k < rowIndex + 2 && k >= 0 && k < numberOfRows; k++) {
+
+                TableRow row = (TableRow) tableLayout.getChildAt(k);
+
+                for (int m = columnIndex - 1; m < columnIndex + 2 && m >= 0 && m < numberOfColumns; m++) {
+
+                    if (k == rowIndex && m == columnIndex) {
+                        continue;
+                    } else {
+
+                        int diedCellIndex = k * numberOfColumns + m;
+
+                        if (checkedDiedCells.contains(diedCellIndex) == false) {
+
+                            checkCell(false, diedCellIndex);
+                            checkedDiedCells.add(diedCellIndex);
+                        }
+                    }
+                }
             }
         }
+        checkedDiedCells.clear();
     }
 
     private void updateTheGrid() {
 
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                for (int index : dyingList) {
 
-                    int rowIndex = index / numberOfColumns;
-                    int columnIndex = index % numberOfColumns;
+        for (int index : toDieCellsList) {
 
-                    TableRow row = (TableRow) tableLayout.getChildAt(rowIndex);
-                    ImageView imageView = (ImageView) row.getChildAt(columnIndex);
+            int rowIndex = index / numberOfColumns;
+            int columnIndex = index % numberOfColumns;
 
-                    imageView.setBackgroundColor(Color.WHITE);
-                }
+            TableRow row = (TableRow) tableLayout.getChildAt(rowIndex);
+            ImageView imageView = (ImageView) row.getChildAt(columnIndex);
 
-
-                for (int index : livingList) {
-
-                    int rowIndex = index / numberOfColumns;
-                    int columnIndex = index % numberOfColumns;
-
-                    TableRow row = (TableRow) tableLayout.getChildAt(rowIndex);
-                    ImageView imageView = (ImageView) row.getChildAt(columnIndex);
+            imageView.setBackgroundColor(Color.WHITE);
+            livingCellsList.remove(new Integer(index));
+        }
 
 
-                    imageView.setBackgroundColor(Color.BLACK);
-                }
+        for (int index : toLiveCellsList) {
 
-                dyingList.clear();
-                livingList.clear();
-            }
-        });
+            int rowIndex = index / numberOfColumns;
+            int columnIndex = index % numberOfColumns;
 
+            TableRow row = (TableRow) tableLayout.getChildAt(rowIndex);
+            ImageView imageView = (ImageView) row.getChildAt(columnIndex);
+
+
+            imageView.setBackgroundColor(Color.BLACK);
+            livingCellsList.add(index);
+        }
+
+        toDieCellsList.clear();
+        toLiveCellsList.clear();
 
         //tableLayout.invalidate();
     }
