@@ -233,7 +233,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
         incrementTimer.cancel();
     }
 
-    private void clearTheGrid() {
+    protected void clearTheGrid() {
 
         for (int index : livingCellsList) {
 
@@ -249,6 +249,9 @@ public class MainActivity extends Activity implements View.OnClickListener {
         livingCellsList.clear();
     }
 
+    protected ArrayList getLivingList(){
+        return livingCellsList;
+    }
 
     private boolean isLiveCell(TableRow row, int index) {
 

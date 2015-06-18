@@ -4,4 +4,4 @@
     android:background="@android:color/white"
     android:layout_margin="2dp">
 </ImageView>
-<!-- From: file:/C:/Users/IBM_ADMIN/AndroidStudioProjects/GameOfLifeSimulator/app/src/main/res/layout/square_cell.xml -->
+<!-- From: file:/C:/Users/IBM_ADMIN/GameOfLifeSimulator/app/src/main/res/layout/square_cell.xml -->
